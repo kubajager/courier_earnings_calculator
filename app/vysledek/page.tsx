@@ -285,43 +285,45 @@ function VysledekContent() {
   return (
     <PageShell
       title="Výsledky výpočtu"
-      subtitle={`${city} • ${platform}`}
+      subtitle={
+        <>
+          {city} • {platform}
+          <span className="w-1 h-1 bg-[#4A5568] rounded-full shrink-0" aria-hidden />
+          Posledních 7 dní
+        </>
+      }
     >
       <div className="space-y-8">
         {/* Results */}
         <div className="space-y-4">
-          <div className="bg-[#12171D] border border-[#2A2F36] rounded-lg p-6">
+          <div>
             <h2 className="text-xl font-medium text-white font-heading mb-4">
               Vaše statistiky
             </h2>
-            <div className="space-y-3">
+            <div className="bg-[#12171D] border border-[#2A2F36] rounded-lg p-6 space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-[#B0B5BA]">Hodinová sazba</span>
+                <span className="text-[#B0B5BA] text-sm">Hodinová sazba</span>
                 <span className="text-white font-medium text-lg">
                   {formatCZK(results.hourlyRate)}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-[#B0B5BA]">Výdělek na doručení</span>
+                <span className="text-[#B0B5BA] text-sm">Výdělek na doručení</span>
                 <span className="text-white font-medium text-lg">
                   {formatCZK(results.earningsPerDelivery)}
                 </span>
               </div>
-              <div className="flex justify-between items-center pt-3 border-t border-[#2A2F36]">
-                <span className="text-[#B0B5BA]">Měsíční odhad</span>
-                <span className="text-white font-medium text-xl">
+              <div className="pt-4 border-t border-[#2A2F36] flex justify-between items-center">
+                <span className="text-[#B0B5BA] text-sm font-medium">Měsíční odhad</span>
+                <span className="text-white font-semibold text-2xl tracking-tight">
                   {formatCZK(results.monthlyEstimate)}
                 </span>
               </div>
             </div>
+            <p className="text-[12px] italic text-[#8A8F94] mt-4 leading-relaxed">
+              * Výpočty jsou orientační a nezahrnují náklady na palivo, amortizaci vozidla ani daně. Částky jsou založeny na vámi zadaných údajích.
+            </p>
           </div>
-
-          <p className="text-sm text-[#B0B5BA]">
-            <strong className="text-white">Poznámka:</strong> Měsíční odhad je
-            vypočítán jako týdenní výdělek × 4.33 a slouží pouze pro orientaci.
-            Skutečný měsíční výdělek se může lišit v závislosti na počtu
-            odpracovaných týdnů a sezónnosti.
-          </p>
         </div>
 
         {/* Recommendations */}
@@ -329,15 +331,15 @@ function VysledekContent() {
           <h2 className="text-xl font-medium text-white font-heading">
             Doporučení
           </h2>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 gap-4">
             {recommendations.map((rec, index) => (
               <div
                 key={index}
-                className="bg-[#12171D] border border-[#2A2F36] rounded-lg p-5"
+                className="bg-[#12171D] border border-[#2A2F36] rounded-lg p-5 hover:border-[#4A5568] transition-colors"
               >
-                <h3 className="text-white font-medium mb-2">{rec.title}</h3>
-                <p className="text-[#B0B5BA] text-sm mb-2">{rec.description}</p>
-                <p className="text-[#8A8F94] text-xs italic">{rec.reason}</p>
+                <h3 className="text-white font-medium mb-1">{rec.title}</h3>
+                <p className="text-[#B0B5BA] text-sm mb-2 leading-relaxed">{rec.description}</p>
+                <p className="text-[#8A8F94] text-[11px] italic uppercase tracking-wider">{rec.reason}</p>
               </div>
             ))}
           </div>
@@ -357,24 +359,25 @@ function VysledekContent() {
           </p>
         </div>
 
-        {/* Back link */}
-        <div className="pt-4 border-t border-[#2A2F36]">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Link
-              href="/kalkulacka"
-              className="inline-block px-6 py-3 bg-white text-[#12171D] font-medium rounded-lg hover:bg-[#E5E7EB] transition-colors text-center"
-            >
-              Zpět
-            </Link>
+        {/* Footer */}
+        <div className="mt-12 pt-8 border-t border-[#2A2F36] flex flex-col sm:flex-row gap-4">
+          <Link
+            href="/kalkulacka"
+            className="flex-1 h-[48px] flex items-center justify-center gap-2 bg-white text-[#12171D] font-medium rounded-lg hover:bg-[#E5E7EB] transition-all active:scale-[0.99]"
+          >
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+            Zpět
+          </Link>
 
-            <div className="flex flex-col items-stretch gap-2 sm:items-end">
-              <button
-                type="button"
-                onClick={handleShare}
-                className="px-6 py-3 border border-[#2A2F36] bg-[#12171D] text-white font-medium rounded-lg hover:bg-[#1A1F26] transition-colors"
-              >
-                {shareState.status === "copied" ? "Zkopírováno" : "Sdílet"}
-              </button>
+          <div className="flex flex-col items-stretch gap-2 sm:flex-1 sm:items-end">
+            <button
+              type="button"
+              onClick={handleShare}
+              className="flex-1 sm:flex-initial h-[48px] min-w-[140px] flex items-center justify-center gap-2 border border-[#2A2F36] bg-[#12171D] text-white font-medium rounded-lg hover:bg-[#1A1F26] transition-all active:scale-[0.99]"
+            >
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+              {shareState.status === "copied" ? "Zkopírováno" : "Sdílet výsledek"}
+            </button>
 
               {shareState.status === "fallback" && (
                 <div className="w-full sm:w-[420px]">
@@ -389,7 +392,6 @@ function VysledekContent() {
                   />
                 </div>
               )}
-            </div>
           </div>
         </div>
       </div>

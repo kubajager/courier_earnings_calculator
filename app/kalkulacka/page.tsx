@@ -209,15 +209,15 @@ export default function KalkulackaPage() {
             onChange={(e) =>
               setFormData({ ...formData, email: e.target.value })
             }
-            className="w-full px-4 py-2 bg-[#12171D] border border-[#2A2F36] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4A5568] focus:border-transparent"
+            className="w-full h-[42px] px-4 bg-[#12171D] border border-[#2A2F36] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#4A5568] transition-all"
           />
           {errors.email && (
-            <p className="mt-1 text-sm text-red-400">{errors.email}</p>
+            <p className="mt-1 text-sm text-[#F87171]">{errors.email}</p>
           )}
         </div>
 
         {/* Město */}
-        <div>
+        <div className="relative">
           <label
             htmlFor="city"
             className="block text-sm font-medium text-white mb-2"
@@ -230,7 +230,7 @@ export default function KalkulackaPage() {
             onChange={(e) =>
               setFormData({ ...formData, city: e.target.value })
             }
-            className="w-full px-4 py-2 bg-[#12171D] border border-[#2A2F36] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4A5568] focus:border-transparent"
+            className="w-full h-[42px] px-4 pr-10 bg-[#12171D] border border-[#2A2F36] rounded-lg text-sm text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#4A5568] transition-all cursor-pointer"
           >
             <option value="">Vyberte město</option>
             {CITIES.map((city) => (
@@ -239,8 +239,9 @@ export default function KalkulackaPage() {
               </option>
             ))}
           </select>
+          <svg className="absolute right-4 bottom-3 w-4 h-4 text-[#8A8F94] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
           {errors.city && (
-            <p className="mt-1 text-sm text-red-400">{errors.city}</p>
+            <p className="mt-1 text-sm text-[#F87171]">{errors.city}</p>
           )}
         </div>
 
@@ -259,16 +260,16 @@ export default function KalkulackaPage() {
               onChange={(e) =>
                 setFormData({ ...formData, cityOther: e.target.value })
               }
-              className="w-full px-4 py-2 bg-[#12171D] border border-[#2A2F36] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4A5568] focus:border-transparent"
+              className="w-full h-[42px] px-4 bg-[#12171D] border border-[#2A2F36] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#4A5568] transition-all"
             />
             {errors.cityOther && (
-              <p className="mt-1 text-sm text-red-400">{errors.cityOther}</p>
+              <p className="mt-1 text-sm text-[#F87171]">{errors.cityOther}</p>
             )}
           </div>
         )}
 
         {/* Platforma */}
-        <div>
+        <div className="relative">
           <label
             htmlFor="platform"
             className="block text-sm font-medium text-white mb-2"
@@ -281,7 +282,7 @@ export default function KalkulackaPage() {
             onChange={(e) =>
               setFormData({ ...formData, platform: e.target.value })
             }
-            className="w-full px-4 py-2 bg-[#12171D] border border-[#2A2F36] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4A5568] focus:border-transparent"
+            className="w-full h-[42px] px-4 pr-10 bg-[#12171D] border border-[#2A2F36] rounded-lg text-sm text-white appearance-none focus:outline-none focus:ring-2 focus:ring-[#4A5568] transition-all cursor-pointer"
           >
             <option value="">Vyberte platformu</option>
             {PLATFORMS.map((platform) => (
@@ -290,8 +291,9 @@ export default function KalkulackaPage() {
               </option>
             ))}
           </select>
+          <svg className="absolute right-4 bottom-3 w-4 h-4 text-[#8A8F94] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
           {errors.platform && (
-            <p className="mt-1 text-sm text-red-400">{errors.platform}</p>
+            <p className="mt-1 text-sm text-[#F87171]">{errors.platform}</p>
           )}
         </div>
 
@@ -310,10 +312,10 @@ export default function KalkulackaPage() {
               onChange={(e) =>
                 setFormData({ ...formData, platformOther: e.target.value })
               }
-              className="w-full px-4 py-2 bg-[#12171D] border border-[#2A2F36] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4A5568] focus:border-transparent"
+              className="w-full h-[42px] px-4 bg-[#12171D] border border-[#2A2F36] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#4A5568] transition-all"
             />
             {errors.platformOther && (
-              <p className="mt-1 text-sm text-red-400">
+              <p className="mt-1 text-sm text-[#F87171]">
                 {errors.platformOther}
               </p>
             )}
@@ -340,10 +342,10 @@ export default function KalkulackaPage() {
                 hoursPerWeek: e.target.value ? parseFloat(e.target.value) : undefined,
               })
             }
-            className="w-full px-4 py-2 bg-[#12171D] border border-[#2A2F36] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4A5568] focus:border-transparent"
+            className="w-full h-[42px] px-4 bg-[#12171D] border border-[#2A2F36] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#4A5568] transition-all"
           />
           {errors.hoursPerWeek && (
-            <p className="mt-1 text-sm text-red-400">{errors.hoursPerWeek}</p>
+            <p className="mt-1 text-sm text-[#F87171]">{errors.hoursPerWeek}</p>
           )}
         </div>
 
@@ -368,10 +370,10 @@ export default function KalkulackaPage() {
                   : undefined,
               })
             }
-            className="w-full px-4 py-2 bg-[#12171D] border border-[#2A2F36] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4A5568] focus:border-transparent"
+            className="w-full h-[42px] px-4 bg-[#12171D] border border-[#2A2F36] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#4A5568] transition-all"
           />
           {errors.deliveriesPerWeek && (
-            <p className="mt-1 text-sm text-red-400">
+            <p className="mt-1 text-sm text-[#F87171]">
               {errors.deliveriesPerWeek}
             </p>
           )}
@@ -398,17 +400,17 @@ export default function KalkulackaPage() {
                   : undefined,
               })
             }
-            className="w-full px-4 py-2 bg-[#12171D] border border-[#2A2F36] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4A5568] focus:border-transparent"
+            className="w-full h-[42px] px-4 bg-[#12171D] border border-[#2A2F36] rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#4A5568] transition-all"
           />
           {errors.earningsPerWeek && (
-            <p className="mt-1 text-sm text-red-400">
+            <p className="mt-1 text-sm text-[#F87171]">
               {errors.earningsPerWeek}
             </p>
           )}
         </div>
 
         {/* Souhlas se zpracováním osobních údajů */}
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1 pt-2">
           <div className="flex items-start gap-3">
             <input
               type="checkbox"
@@ -420,16 +422,16 @@ export default function KalkulackaPage() {
                   consentToPrivacy: e.target.checked,
                 })
               }
-              className="mt-0.5 w-5 h-5 rounded border-[#2A2F36] bg-[#12171D] text-[#4A5568] focus:ring-2 focus:ring-[#4A5568]"
+              className="mt-1 w-[18px] h-[18px] rounded border-[#2A2F36] bg-[#12171D] accent-[#4A5568] focus:ring-2 focus:ring-[#4A5568] focus:ring-offset-0 cursor-pointer"
             />
             <label
               htmlFor="consentToPrivacy"
-              className="text-sm text-[#B0B5BA] cursor-pointer"
+              className="text-[13px] text-[#B0B5BA] leading-normal cursor-pointer"
             >
               Odesláním formuláře souhlasím se zpracováním osobních údajů dle{" "}
               <a
                 href="/privacy"
-                className="underline underline-offset-2 text-[#E5E7EB] hover:text-white"
+                className="text-[#E5E7EB] underline underline-offset-4 decoration-[#2A2F36] hover:text-white hover:decoration-white transition-all"
               >
                 Zásad ochrany osobních údajů
               </a>
@@ -437,14 +439,14 @@ export default function KalkulackaPage() {
             </label>
           </div>
           {errors.consentToPrivacy && (
-            <p className="mt-1 text-sm text-red-400">{errors.consentToPrivacy}</p>
+            <p className="mt-1 text-sm text-[#F87171]">{errors.consentToPrivacy}</p>
           )}
         </div>
 
         {/* Submit button */}
         <button
           type="submit"
-          className="w-full px-6 py-3 bg-white text-[#12171D] font-medium rounded-lg hover:bg-[#E5E7EB] transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#1A1F26]"
+          className="w-full h-[48px] bg-white text-[#12171D] font-medium text-base rounded-lg hover:bg-[#E5E7EB] transition-colors duration-200 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-[#1A1F26]"
         >
           Vypočítat
         </button>

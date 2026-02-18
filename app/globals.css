@@ -18,6 +18,10 @@ body {
   font-family: var(--font-inter), sans-serif;
 }
 
+::selection {
+  background: rgba(74, 85, 104, 0.3);
+}
+
 .font-heading {
   font-family: var(--font-space-grotesk), sans-serif;
 }
