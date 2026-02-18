@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import PageShell from "@/components/PageShell";
 import {
@@ -9,6 +10,7 @@ import {
   formatCZK,
 } from "@/lib/calc";
 import { getOnboardingStatus, PLATFORM_LIST } from "@/lib/onboardingStatus";
+import { getPlatformLogoPath } from "@/lib/platformLogos";
 import { generateRecommendations } from "@/lib/recommendations";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -38,6 +40,8 @@ type PlatformRangeRow = {
 };
 
 const THRESHOLD_PERCENT = 5;
+const SCORE_ABOVE = 60;
+const SCORE_BELOW = 40;
 
 function diffPercent(user: number, benchmark: number): number | null {
   if (!benchmark || !Number.isFinite(benchmark)) return null;
@@ -49,6 +53,13 @@ function indicatorVsUser(userHourly: number, platformHourly: number | null, n: n
   const pct = ((userHourly - platformHourly) / platformHourly) * 100;
   if (pct >= THRESHOLD_PERCENT) return "green";
   if (pct <= -THRESHOLD_PERCENT) return "red";
+  return "neutral";
+}
+
+/** Score color: above average green, below red, else neutral */
+function scoreColor(score: number): "green" | "red" | "neutral" {
+  if (score >= SCORE_ABOVE) return "green";
+  if (score < SCORE_BELOW) return "red";
   return "neutral";
 }
 
@@ -82,6 +93,7 @@ export function VysledekClient({
     deliveriesPerHour: results.deliveriesPerHour,
     earningsPerDelivery: results.earningsPerDelivery,
   });
+  const scoreColorKey = scoreColor(score);
 
   const [bench, setBench] = useState<BenchRpc | null>(null);
   const [benchSource, setBenchSource] = useState<"city_platform" | "platform" | "global" | null>(null);
@@ -89,12 +101,11 @@ export function VysledekClient({
   const [shareState, setShareState] = useState<
     { status: "idle" } | { status: "copied" } | { status: "fallback"; url: string }
   >({ status: "idle" });
-  const [emailModalOpen, setEmailModalOpen] = useState(false);
 
+  // Stable across server/client: no window check (fixes hydration)
   const canQuery = Boolean(
-    typeof window !== "undefined" &&
-      process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
 
   useEffect(() => {
@@ -157,16 +168,14 @@ export function VysledekClient({
     })();
   }, [canQuery, result.city]);
 
-  const resultsUrl = sid
-    ? typeof window !== "undefined"
-      ? `${window.location.origin}/vysledek?sid=${encodeURIComponent(sid)}`
-      : ""
-    : typeof window !== "undefined"
-      ? window.location.href
-      : "";
-
   const handleShare = async () => {
-    const url = resultsUrl || (typeof window !== "undefined" ? window.location.href : "");
+    const url =
+      typeof window !== "undefined"
+        ? sid
+          ? `${window.location.origin}/vysledek?sid=${encodeURIComponent(sid)}`
+          : window.location.href
+        : "";
+    if (!url) return;
     try {
       await navigator.clipboard.writeText(url);
       setShareState({ status: "copied" });
@@ -174,11 +183,6 @@ export function VysledekClient({
     } catch {
       setShareState({ status: "fallback", url });
     }
-  };
-
-  const handleEmailStub = () => {
-    setEmailModalOpen(true);
-    if (resultsUrl) navigator.clipboard.writeText(resultsUrl).catch(() => {});
   };
 
   return (
@@ -193,7 +197,33 @@ export function VysledekClient({
       }
     >
       <div className="space-y-8">
-        {/* Block 1: Summary KPIs */}
+        {/* Block 1: Efficiency score (first thing you see) */}
+        <section>
+          <h2 className="text-xl font-medium text-white font-heading mb-4">
+            Skóre efektivity
+          </h2>
+          <div className="bg-[#12171D] border border-[#2A2F36] rounded-lg p-5">
+            <div className="flex items-center gap-4">
+              <span
+                className={`text-3xl font-semibold tabular-nums ${
+                  scoreColorKey === "green"
+                    ? "text-emerald-400"
+                    : scoreColorKey === "red"
+                      ? "text-red-400"
+                      : "text-white"
+                }`}
+              >
+                {score}
+              </span>
+              <span className="text-[#B0B5BA] text-sm">/ 100</span>
+            </div>
+            <p className="text-[#8A8F94] text-xs mt-2">
+              Váhy: hodinová sazba 50 %, doručení/hod 30 %, výdělek/doručení 20 %.
+            </p>
+          </div>
+        </section>
+
+        {/* Block 2: Summary KPIs */}
         <section>
           <h2 className="text-xl font-medium text-white font-heading mb-4">
             Přehled
@@ -232,7 +262,7 @@ export function VysledekClient({
           </div>
         </section>
 
-        {/* Block 2: Benchmark comparison */}
+        {/* Block 3: Benchmark comparison */}
         <section>
           <h2 className="text-xl font-medium text-white font-heading mb-4">
             Srovnání s trhem
@@ -247,9 +277,19 @@ export function VysledekClient({
                     : `Celkem (n=${bench.n})`}
               </p>
               {bench.avg_hourly_rate != null && (
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center gap-2 flex-wrap">
                   <span className="text-[#B0B5BA] text-sm">Hodinová sazba vs. průměr</span>
-                  <span className="text-white font-medium">
+                  <span
+                    className={`font-medium ${
+                      (() => {
+                        const pct = diffPercent(results.hourlyRate, bench.avg_hourly_rate);
+                        if (pct == null) return "text-white";
+                        if (pct > 0) return "text-emerald-400";
+                        if (pct < 0) return "text-red-400";
+                        return "text-[#B0B5BA]";
+                      })()
+                    }`}
+                  >
                     {(() => {
                       const pct = diffPercent(results.hourlyRate, bench.avg_hourly_rate);
                       if (pct == null) return "—";
@@ -266,22 +306,6 @@ export function VysledekClient({
               <p className="text-[#B0B5BA] text-sm">Benchmark není k dispozici.</p>
             </div>
           )}
-        </section>
-
-        {/* Block 3: Efficiency score */}
-        <section>
-          <h2 className="text-xl font-medium text-white font-heading mb-4">
-            Skóre efektivity
-          </h2>
-          <div className="bg-[#12171D] border border-[#2A2F36] rounded-lg p-5">
-            <div className="flex items-center gap-4">
-              <span className="text-3xl font-semibold text-white tabular-nums">{score}</span>
-              <span className="text-[#B0B5BA] text-sm">/ 100</span>
-            </div>
-            <p className="text-[#8A8F94] text-xs mt-2">
-              Váhy: hodinová sazba 50 %, doručení/hod 30 %, výdělek/doručení 20 %.
-            </p>
-          </div>
         </section>
 
         {/* Block 4: Exactly 3 recommendations with target deltas */}
@@ -306,7 +330,7 @@ export function VysledekClient({
           </div>
         </section>
 
-        {/* Block 5: Platform scenario cards */}
+        {/* Block 5: Platform scenario cards with logos */}
         <section>
           <h2 className="text-xl font-medium text-white font-heading mb-4">
             Odhady po platformách
@@ -324,15 +348,27 @@ export function VysledekClient({
               const avg = p50 ?? (p25 != null && p75 != null ? (p25 + p75) / 2 : null);
               const ind = indicatorVsUser(results.hourlyRate, p50 ?? avg, n);
               const status = getOnboardingStatus(result.city, plat);
+              const logoPath = getPlatformLogoPath(plat);
               return (
                 <div
                   key={plat}
                   className="bg-[#12171D] border border-[#2A2F36] rounded-lg p-4 flex flex-wrap items-center justify-between gap-2"
                 >
-                  <div>
+                  <div className="flex items-center gap-3 min-w-0">
+                    {logoPath ? (
+                      <span className="relative w-8 h-8 shrink-0 rounded overflow-hidden bg-[#2A2F36]">
+                        <Image
+                          src={logoPath}
+                          alt=""
+                          width={32}
+                          height={32}
+                          className="object-contain"
+                        />
+                      </span>
+                    ) : null}
                     <span className="text-white font-medium">{plat}</span>
                     <span
-                      className={`ml-2 text-xs px-2 py-0.5 rounded ${
+                      className={`text-xs px-2 py-0.5 rounded shrink-0 ${
                         status === "Nabírá"
                           ? "bg-emerald-900/40 text-emerald-300"
                           : status === "Omezeně"
@@ -360,13 +396,16 @@ export function VysledekClient({
                       <span className="text-[#8A8F94] text-sm">—</span>
                     )}
                     {ind === "green" && (
-                      <span className="text-emerald-400 text-sm" aria-label="Nad průměrem">↑</span>
+                      <span className="text-emerald-400 font-medium text-sm" aria-label="Nad průměrem">↑</span>
                     )}
                     {ind === "red" && (
-                      <span className="text-red-400 text-sm" aria-label="Pod průměrem">↓</span>
+                      <span className="text-red-400 font-medium text-sm" aria-label="Pod průměrem">↓</span>
                     )}
                     {ind === "neutral" && (
                       <span className="text-[#8A8F94] text-sm" aria-label="Na úrovni">−</span>
+                    )}
+                    {ind === "gray" && (
+                      <span className="text-[#4A5568] text-sm" aria-hidden>−</span>
                     )}
                   </div>
                 </div>
@@ -375,67 +414,35 @@ export function VysledekClient({
           </div>
         </section>
 
-        {/* Footer: Zpět, Sdílet, Poslat odkaz e-mailem */}
-        <div className="mt-8 pt-6 border-t border-[#2A2F36] flex flex-col gap-4">
+        {/* Footer: Zpět + Sdílet */}
+        <div className="mt-8 pt-6 border-t border-[#2A2F36] flex flex-col sm:flex-row gap-3">
           <Link
             href="/kalkulacka"
-            className="h-[48px] flex items-center justify-center gap-2 bg-white text-[#12171D] font-medium rounded-lg hover:bg-[#E5E7EB] transition-all active:scale-[0.99]"
+            className="h-[48px] flex-1 flex items-center justify-center gap-2 bg-white text-[#12171D] font-medium rounded-lg hover:bg-[#E5E7EB] transition-all active:scale-[0.99]"
           >
             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
             Zpět
           </Link>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <button
-              type="button"
-              onClick={handleShare}
-              className="h-[48px] flex-1 flex items-center justify-center gap-2 border border-[#2A2F36] bg-[#12171D] text-white font-medium rounded-lg hover:bg-[#1A1F26] transition-all active:scale-[0.99]"
-            >
-              {shareState.status === "copied" ? "Zkopírováno" : "Sdílet výsledek"}
-            </button>
-            <button
-              type="button"
-              onClick={handleEmailStub}
-              className="h-[48px] flex-1 flex items-center justify-center gap-2 border border-[#2A2F36] bg-[#12171D] text-white font-medium rounded-lg hover:bg-[#1A1F26] transition-all active:scale-[0.99]"
-            >
-              Poslat odkaz na výsledky e-mailem
-            </button>
-          </div>
-          {shareState.status === "fallback" && (
+          <button
+            type="button"
+            onClick={handleShare}
+            className="h-[48px] flex-1 min-w-[140px] flex items-center justify-center gap-2 border border-[#2A2F36] bg-[#12171D] text-white font-medium rounded-lg hover:bg-[#1A1F26] transition-all active:scale-[0.99]"
+          >
+            {shareState.status === "copied" ? "Zkopírováno" : "Sdílet výsledek"}
+          </button>
+        </div>
+        {shareState.status === "fallback" && (
+          <div className="mt-2">
+            <label className="block text-xs text-[#B0B5BA] mb-1">Zkopíruj odkaz</label>
             <input
               readOnly
               value={shareState.url}
               onFocus={(e) => e.currentTarget.select()}
               className="w-full px-3 py-2 bg-[#12171D] border border-[#2A2F36] rounded-lg text-white text-sm"
             />
-          )}
-        </div>
-      </div>
-
-      {/* Email stub modal */}
-      {emailModalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="email-modal-title"
-        >
-          <div className="bg-[#1A1F26] border border-[#2A2F36] rounded-lg p-6 max-w-sm w-full shadow-xl">
-            <h3 id="email-modal-title" className="text-white font-medium mb-2">
-              Poslat odkaz e-mailem
-            </h3>
-            <p className="text-[#B0B5BA] text-sm mb-4">
-              Brzy doplníme. Prozatím si uložte tento odkaz (zkopírován do schránky).
-            </p>
-            <button
-              type="button"
-              onClick={() => setEmailModalOpen(false)}
-              className="w-full h-[44px] bg-white text-[#12171D] font-medium rounded-lg hover:bg-[#E5E7EB]"
-            >
-              Rozumím
-            </button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </PageShell>
   );
 }
