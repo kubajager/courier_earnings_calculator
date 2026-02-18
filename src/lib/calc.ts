@@ -97,13 +97,11 @@ export function efficiencyScore(results: {
 }
 
 /**
- * Format number as CZK currency
+ * Format number as CZK currency.
+ * Deterministic (no Intl) so server and client render identical HTML and avoid hydration mismatch.
  */
 export function formatCZK(amount: number): string {
-  return new Intl.NumberFormat("cs-CZ", {
-    style: "currency",
-    currency: "CZK",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+  const n = Math.round(amount);
+  const s = n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0");
+  return s + "\u00A0Kč";
 }
