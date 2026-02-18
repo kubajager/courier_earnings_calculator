@@ -1,17 +1,15 @@
 /**
- * Official brand logos (Clearbit Logo API – logos from company domains, own colors).
- * Fallback to local path if remote fails (e.g. adblock).
+ * Platform logos (local SVGs in public/logos – brand colors).
+ * Replace files with official assets if desired.
  */
-const CLEARBIT = "https://logo.clearbit.com";
-
 export const PLATFORM_LOGO: Record<string, string> = {
-  Wolt: `${CLEARBIT}/wolt.com`,
-  Bolt: `${CLEARBIT}/bolt.eu`,
-  Foodora: `${CLEARBIT}/foodora.com`,
-  Rohlík: `${CLEARBIT}/rohlik.cz`,
-  Košík: `${CLEARBIT}/kosik.cz`,
-  DPD: `${CLEARBIT}/dpd.com`,
-  Zásilkovna: `${CLEARBIT}/zasilkovna.cz`,
+  Wolt: "/logos/wolt.svg",
+  Bolt: "/logos/bolt.svg",
+  Foodora: "/logos/foodora.svg",
+  Rohlík: "/logos/rohlik.svg",
+  Košík: "/logos/kosik.svg",
+  DPD: "/logos/dpd.svg",
+  Zásilkovna: "/logos/zasilkovna.svg",
 };
 
 export function getPlatformLogoPath(platform: string): string | undefined {

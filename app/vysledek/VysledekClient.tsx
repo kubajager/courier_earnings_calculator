@@ -43,23 +43,8 @@ const SCORE_ABOVE = 60;
 const SCORE_BELOW = 40;
 
 function PlatformLogo({ url, name }: { url: string; name: string }) {
-  const [src, setSrc] = useState(url);
   const [failed, setFailed] = useState(false);
   const initial = name.charAt(0);
-  const isClearbit = url.startsWith("https://logo.clearbit.com/");
-  const domain = isClearbit ? url.slice(24) : "";
-  const fallbackUrl = domain
-    ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128`
-    : "";
-
-  const handleError = () => {
-    if (src === url && fallbackUrl) {
-      setSrc(fallbackUrl);
-    } else {
-      setFailed(true);
-    }
-  };
-
   return (
     <span className="relative w-8 h-8 shrink-0 rounded overflow-hidden bg-[#2A2F36] flex items-center justify-center">
       {failed ? (
@@ -68,12 +53,12 @@ function PlatformLogo({ url, name }: { url: string; name: string }) {
         </span>
       ) : (
         <img
-          src={src}
+          src={url}
           alt=""
           width={32}
           height={32}
           className="w-full h-full object-contain"
-          onError={handleError}
+          onError={() => setFailed(true)}
         />
       )}
     </span>
@@ -234,25 +219,61 @@ export function VysledekClient({
       }
     >
       <div className="space-y-8">
-        {/* Block 1: Efficiency score (first thing you see) */}
+        {/* Block 1: Efficiency score (first thing you see) – color flag */}
         <section>
           <h2 className="text-xl font-medium text-white font-heading mb-4">
             Skóre efektivity
           </h2>
-          <div className="bg-[#12171D] border border-[#2A2F36] rounded-lg p-5">
-            <div className="flex items-center gap-4">
+          <div
+            className="rounded-lg p-5 border-l-4"
+            style={{
+              backgroundColor: "#12171D",
+              borderColor:
+                scoreColorKey === "green"
+                  ? "#34d399"
+                  : scoreColorKey === "red"
+                    ? "#f87171"
+                    : "#4A5568",
+            }}
+          >
+            <div className="flex items-center gap-3 flex-wrap">
               <span
-                className={`text-3xl font-semibold tabular-nums ${
-                  scoreColorKey === "green"
-                    ? "text-emerald-400"
-                    : scoreColorKey === "red"
-                      ? "text-red-400"
-                      : "text-white"
-                }`}
+                className="text-3xl font-semibold tabular-nums"
+                style={{
+                  color:
+                    scoreColorKey === "green"
+                      ? "#34d399"
+                      : scoreColorKey === "red"
+                        ? "#f87171"
+                        : "#fff",
+                }}
               >
                 {score}
               </span>
               <span className="text-[#B0B5BA] text-sm">/ 100</span>
+              <span
+                className="text-xs font-medium px-2 py-1 rounded-full"
+                style={{
+                  backgroundColor:
+                    scoreColorKey === "green"
+                      ? "rgba(52, 211, 153, 0.2)"
+                      : scoreColorKey === "red"
+                        ? "rgba(248, 113, 113, 0.2)"
+                        : "rgba(74, 85, 104, 0.3)",
+                  color:
+                    scoreColorKey === "green"
+                      ? "#34d399"
+                      : scoreColorKey === "red"
+                        ? "#f87171"
+                        : "#B0B5BA",
+                }}
+              >
+                {scoreColorKey === "green"
+                  ? "Nad průměrem"
+                  : scoreColorKey === "red"
+                    ? "Pod průměrem"
+                    : "Průměr"}
+              </span>
             </div>
             <p className="text-[#8A8F94] text-xs mt-2">
               Váhy: hodinová sazba 50 %, doručení/hod 30 %, výdělek/doručení 20 %.
@@ -305,39 +326,60 @@ export function VysledekClient({
             Srovnání s trhem
           </h2>
           {bench && benchSource ? (
-            <div className="bg-[#12171D] border border-[#2A2F36] rounded-lg p-5 space-y-3">
-              <p className="text-[#8A8F94] text-xs">
-                {benchSource === "city_platform"
-                  ? `Město + platforma (n=${bench.n})`
-                  : benchSource === "platform"
-                    ? `Platforma (n=${bench.n})`
-                    : `Celkem (n=${bench.n})`}
-              </p>
-              {bench.avg_hourly_rate != null && (
-                <div className="flex justify-between items-center gap-2 flex-wrap">
-                  <span className="text-[#B0B5BA] text-sm">Hodinová sazba vs. průměr</span>
-                  <span
-                    className={`font-medium ${
-                      (() => {
-                        const pct = diffPercent(results.hourlyRate, bench.avg_hourly_rate);
-                        if (pct == null) return "text-white";
-                        if (pct > 0) return "text-emerald-400";
-                        if (pct < 0) return "text-red-400";
-                        return "text-[#B0B5BA]";
-                      })()
-                    }`}
-                  >
-                    {(() => {
-                      const pct = diffPercent(results.hourlyRate, bench.avg_hourly_rate);
-                      if (pct == null) return "—";
-                      if (pct > 0) return `+${pct.toFixed(0)} % nad průměrem`;
-                      if (pct < 0) return `${pct.toFixed(0)} % pod průměrem`;
-                      return "Na úrovni průměru";
-                    })()}
-                  </span>
+            (() => {
+              const pct =
+                bench.avg_hourly_rate != null
+                  ? diffPercent(results.hourlyRate, bench.avg_hourly_rate)
+                  : null;
+              const benchFlag: "above" | "below" | "neutral" =
+                pct == null ? "neutral" : pct > 0 ? "above" : pct < 0 ? "below" : "neutral";
+              return (
+                <div
+                  className="rounded-lg p-5 border-l-4"
+                  style={{
+                    backgroundColor: "#12171D",
+                    borderColor:
+                      benchFlag === "above"
+                        ? "#34d399"
+                        : benchFlag === "below"
+                          ? "#f87171"
+                          : "#4A5568",
+                  }}
+                >
+                  <p className="text-[#8A8F94] text-xs">
+                    {benchSource === "city_platform"
+                      ? `Město + platforma (n=${bench.n})`
+                      : benchSource === "platform"
+                        ? `Platforma (n=${bench.n})`
+                        : `Celkem (n=${bench.n})`}
+                  </p>
+                  {bench.avg_hourly_rate != null && (
+                    <div className="flex justify-between items-center gap-2 flex-wrap mt-2">
+                      <span className="text-[#B0B5BA] text-sm">Hodinová sazba vs. průměr</span>
+                      <span
+                        className="font-medium"
+                        style={{
+                          color:
+                            benchFlag === "above"
+                              ? "#34d399"
+                              : benchFlag === "below"
+                                ? "#f87171"
+                                : "#B0B5BA",
+                        }}
+                      >
+                        {pct == null
+                          ? "—"
+                          : pct > 0
+                            ? `+${pct.toFixed(0)} % nad průměrem`
+                            : pct < 0
+                              ? `${pct.toFixed(0)} % pod průměrem`
+                              : "Na úrovni průměru"}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })()
           ) : (
             <div className="bg-[#12171D] border border-[#2A2F36] rounded-lg p-5">
               <p className="text-[#B0B5BA] text-sm">Benchmark není k dispozici.</p>
