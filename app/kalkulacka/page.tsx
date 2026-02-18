@@ -9,6 +9,10 @@ import { supabase } from "@/lib/supabaseClient";
 
 const formSchema = z
   .object({
+    email: z
+      .string()
+      .min(1, "E-mail je povinný")
+      .email("Zadejte platnou e-mailovou adresu"),
     city: z.string().min(1, "Město je povinné"),
     cityOther: z.string().optional(),
     platform: z.string().min(1, "Platforma je povinná"),
@@ -27,6 +31,11 @@ const formSchema = z
       .min(1, "Výdělek musí být alespoň 1 Kč")
       .max(200000, "Výdělek může být max. 200 000 Kč"),
     contributeToBenchmark: z.boolean(),
+    consentToPrivacy: z.boolean(),
+  })
+  .refine((data) => data.consentToPrivacy === true, {
+    message: "Pro odeslání musíte souhlasit se zpracováním osobních údajů.",
+    path: ["consentToPrivacy"],
   })
   .refine(
     (data) => {
@@ -73,10 +82,12 @@ export default function KalkulackaPage() {
   const [formData, setFormData] = useState<Partial<FormData>>({
     contributeToBenchmark: true,
   });
+  const [website, setWebsite] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
+    if (website.trim()) return;
 
     try {
       const validated = formSchema.parse({
@@ -89,6 +100,7 @@ export default function KalkulackaPage() {
             : Number(formData.deliveriesPerWeek),
         earningsPerWeek:
           formData.earningsPerWeek === undefined ? undefined : Number(formData.earningsPerWeek),
+        consentToPrivacy: formData.consentToPrivacy === true,
       });
 
       const cityValue =
@@ -103,6 +115,14 @@ export default function KalkulackaPage() {
         deliveriesPerWeek: validated.deliveriesPerWeek,
         earningsPerWeek: validated.earningsPerWeek,
       });
+
+      void supabase
+        .from("leads")
+        .upsert(
+          { email: validated.email.trim().toLowerCase(), updated_at: new Date().toISOString() },
+          { onConflict: "email" }
+        )
+        .then(() => {}, () => {});
 
       if (validated.contributeToBenchmark) {
         void supabase
@@ -167,6 +187,43 @@ export default function KalkulackaPage() {
       subtitle="Vypočítejte si svůj výdělek a porovnejte se s ostatními"
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-6">
+        {/* Honeypot: leave empty; bots that fill it are blocked silently */}
+        <div className="absolute -left-[9999px] w-px h-px overflow-hidden" aria-hidden="true">
+          <label htmlFor="website">Web</label>
+          <input
+            type="text"
+            id="website"
+            name="website"
+            tabIndex={-1}
+            autoComplete="off"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+          />
+        </div>
+
+        {/* E-mail */}
+        <div>
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-white mb-2"
+          >
+            E-mail
+          </label>
+          <input
+            type="email"
+            id="email"
+            autoComplete="email"
+            value={formData.email || ""}
+            onChange={(e) =>
+              setFormData({ ...formData, email: e.target.value })
+            }
+            className="w-full px-4 py-2 bg-[#12171D] border border-[#2A2F36] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#4A5568] focus:border-transparent"
+          />
+          {errors.email && (
+            <p className="mt-1 text-sm text-red-400">{errors.email}</p>
+          )}
+        </div>
+
         {/* Město */}
         <div>
           <label
@@ -359,25 +416,74 @@ export default function KalkulackaPage() {
         </div>
 
         {/* Toggle pro benchmark */}
-        <div className="flex items-center gap-3">
-          <input
-            type="checkbox"
-            id="contributeToBenchmark"
-            checked={formData.contributeToBenchmark ?? true}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                contributeToBenchmark: e.target.checked,
-              })
-            }
-            className="w-5 h-5 rounded border-[#2A2F36] bg-[#12171D] text-[#4A5568] focus:ring-2 focus:ring-[#4A5568]"
-          />
-          <label
-            htmlFor="contributeToBenchmark"
-            className="text-sm text-[#B0B5BA] cursor-pointer"
-          >
-            Chci přispět do anonymního benchmarku
-          </label>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="contributeToBenchmark"
+              checked={formData.contributeToBenchmark ?? true}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  contributeToBenchmark: e.target.checked,
+                })
+              }
+              className="w-5 h-5 rounded border-[#2A2F36] bg-[#12171D] text-[#4A5568] focus:ring-2 focus:ring-[#4A5568]"
+            />
+            <label
+              htmlFor="contributeToBenchmark"
+              className="text-sm text-[#B0B5BA] cursor-pointer"
+            >
+              Chci přispět do anonymního benchmarku
+            </label>
+          </div>
+          <div className="text-xs text-[#8A8F94]">
+            Další informace najdete v{" "}
+            <a
+              href="/privacy"
+              className="underline underline-offset-2 text-[#E5E7EB] hover:text-white"
+            >
+              Zásadách ochrany osobních údajů
+            </a>
+            .
+          </div>
+        </div>
+
+        {/* Souhlas se zpracováním osobních údajů */}
+        <div className="flex flex-col gap-1">
+          <div className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="consentToPrivacy"
+              checked={formData.consentToPrivacy ?? false}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  consentToPrivacy: e.target.checked,
+                })
+              }
+              className="mt-0.5 w-5 h-5 rounded border-[#2A2F36] bg-[#12171D] text-[#4A5568] focus:ring-2 focus:ring-[#4A5568]"
+            />
+            <label
+              htmlFor="consentToPrivacy"
+              className="text-sm text-[#B0B5BA] cursor-pointer"
+            >
+              Odesláním formuláře souhlasím se zpracováním osobních údajů dle{" "}
+              <a
+                href="/privacy"
+                className="underline underline-offset-2 text-[#E5E7EB] hover:text-white"
+              >
+                Zásad ochrany osobních údajů
+              </a>
+              .
+            </label>
+          </div>
+          <p className="text-xs text-[#8A8F94]">
+            Účel: zobrazení výsledků a tvorba anonymních tržních průměrů.
+          </p>
+          {errors.consentToPrivacy && (
+            <p className="mt-1 text-sm text-red-400">{errors.consentToPrivacy}</p>
+          )}
         </div>
 
         {/* Submit button */}

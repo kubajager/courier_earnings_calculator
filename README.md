@@ -64,6 +64,30 @@ to anon
 using (true);
 ```
 
+### 3) SQL pro tabulku `leads` (e-mail pro výsledky a kontakt)
+
+```sql
+create table if not exists public.leads (
+  email text primary key,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.leads enable row level security;
+
+create policy "anon_upsert_leads"
+on public.leads
+for insert
+to anon
+with check (true);
+
+create policy "anon_update_leads"
+on public.leads
+for update
+to anon
+using (true)
+with check (true);
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
