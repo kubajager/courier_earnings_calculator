@@ -191,13 +191,10 @@ export function VysledekClient({
   }, [canQuery, result.city]);
 
   const handleShare = async () => {
-    const url =
-      typeof window !== "undefined"
-        ? sid
-          ? `${window.location.origin}/vysledek?sid=${encodeURIComponent(sid)}`
-          : window.location.href
-        : "";
-    if (!url) return;
+    // Only ever called on client (click), so window is defined
+    const url = sid
+      ? `${window.location.origin}/vysledek?sid=${encodeURIComponent(sid)}`
+      : window.location.href;
     try {
       await navigator.clipboard.writeText(url);
       setShareState({ status: "copied" });

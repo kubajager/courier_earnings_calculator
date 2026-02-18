@@ -26,9 +26,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${inter.variable} ${spaceGrotesk.variable} antialiased min-h-screen flex flex-col items-center relative`}
+        suppressHydrationWarning
       >
         <Stickers />
         <main className="w-full flex-1 flex justify-center items-center p-4 md:p-8 relative z-10">
