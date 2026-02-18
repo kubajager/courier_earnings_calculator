@@ -30,7 +30,6 @@ const formSchema = z
       .number({ message: "Výdělek musí být číslo" })
       .min(1, "Výdělek musí být alespoň 1 Kč")
       .max(200000, "Výdělek může být max. 200 000 Kč"),
-    contributeToBenchmark: z.boolean(),
     consentToPrivacy: z.boolean(),
   })
   .refine((data) => data.consentToPrivacy === true, {
@@ -79,9 +78,7 @@ const PLATFORMS = [
 export default function KalkulackaPage() {
   const router = useRouter();
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [formData, setFormData] = useState<Partial<FormData>>({
-    contributeToBenchmark: true,
-  });
+  const [formData, setFormData] = useState<Partial<FormData>>({});
   const [website, setWebsite] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -92,6 +89,7 @@ export default function KalkulackaPage() {
     try {
       const validated = formSchema.parse({
         ...formData,
+        email: formData.email ?? "",
         hoursPerWeek:
           formData.hoursPerWeek === undefined ? undefined : Number(formData.hoursPerWeek),
         deliveriesPerWeek:
@@ -124,25 +122,21 @@ export default function KalkulackaPage() {
         )
         .then(() => {}, () => {});
 
-      if (validated.contributeToBenchmark) {
-        void supabase
-          .from("submissions")
-          .insert({
-            city: cityValue,
-            platform: platformValue,
-            hours_week: validated.hoursPerWeek,
-            deliveries_week: validated.deliveriesPerWeek,
-            earnings_week_czk: validated.earningsPerWeek,
-            hourly_rate: metrics.hourlyRate,
-            earnings_per_delivery: metrics.earningsPerDelivery,
-          })
-          .then(
-            () => {},
-            () => {
-              // Do not block redirect on failure
-            }
-          );
-      }
+      void supabase
+        .from("submissions")
+        .insert({
+          city: cityValue,
+          platform: platformValue,
+          hours_week: validated.hoursPerWeek,
+          deliveries_week: validated.deliveriesPerWeek,
+          earnings_week_czk: validated.earningsPerWeek,
+          hourly_rate: metrics.hourlyRate,
+          earnings_per_delivery: metrics.earningsPerDelivery,
+        })
+        .then(
+          () => {},
+          () => {}
+        );
 
       // Build query params (compact, only essential fields)
       const params = new URLSearchParams();
@@ -151,9 +145,7 @@ export default function KalkulackaPage() {
       params.set("e", validated.earningsPerWeek.toString());
       if (cityValue) params.set("c", cityValue);
       if (platformValue) params.set("p", platformValue);
-      if (validated.contributeToBenchmark) {
-        params.set("b", "1");
-      }
+      params.set("b", "1");
 
       router.push(`/vysledek?${params.toString()}`);
     } catch (error) {
@@ -415,40 +407,6 @@ export default function KalkulackaPage() {
           )}
         </div>
 
-        {/* Toggle pro benchmark */}
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="contributeToBenchmark"
-              checked={formData.contributeToBenchmark ?? true}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  contributeToBenchmark: e.target.checked,
-                })
-              }
-              className="w-5 h-5 rounded border-[#2A2F36] bg-[#12171D] text-[#4A5568] focus:ring-2 focus:ring-[#4A5568]"
-            />
-            <label
-              htmlFor="contributeToBenchmark"
-              className="text-sm text-[#B0B5BA] cursor-pointer"
-            >
-              Chci přispět do anonymního benchmarku
-            </label>
-          </div>
-          <div className="text-xs text-[#8A8F94]">
-            Další informace najdete v{" "}
-            <a
-              href="/privacy"
-              className="underline underline-offset-2 text-[#E5E7EB] hover:text-white"
-            >
-              Zásadách ochrany osobních údajů
-            </a>
-            .
-          </div>
-        </div>
-
         {/* Souhlas se zpracováním osobních údajů */}
         <div className="flex flex-col gap-1">
           <div className="flex items-start gap-3">
@@ -478,9 +436,6 @@ export default function KalkulackaPage() {
               .
             </label>
           </div>
-          <p className="text-xs text-[#8A8F94]">
-            Účel: zobrazení výsledků a tvorba anonymních tržních průměrů.
-          </p>
           {errors.consentToPrivacy && (
             <p className="mt-1 text-sm text-red-400">{errors.consentToPrivacy}</p>
           )}
