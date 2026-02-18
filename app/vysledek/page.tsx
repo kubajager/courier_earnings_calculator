@@ -102,18 +102,17 @@ function VysledekContent() {
       return;
     }
 
-    const mean = (vals: number[]) => vals.reduce((a, b) => a + b, 0) / (vals.length || 1);
-
     const fetchTrimmedMean = async (
-      base: ReturnType<typeof supabase.from>,
+      filter: { city?: string; platform?: string } | undefined,
       column: "hourly_rate" | "earnings_per_delivery",
       n: number
     ) => {
       const cut = Math.floor(n * 0.05);
       if (n < 50 || cut === 0) {
-        const { data, error } = await base.select(
-          `avg:${column}.avg()`
-        );
+        let q = supabase.from("submissions").select(`avg:${column}.avg()`);
+        if (filter?.city) q = q.eq("city", filter.city);
+        if (filter?.platform) q = q.eq("platform", filter.platform);
+        const { data, error } = await q;
         if (error || !data || data.length === 0) return { avg: null, trimmedUsed: false };
         const v = (data[0] as any)?.avg ?? null;
         return { avg: typeof v === "number" ? v : null, trimmedUsed: false };
@@ -127,10 +126,10 @@ function VysledekContent() {
 
       for (let from = start; from <= end; from += pageSize) {
         const to = Math.min(end, from + pageSize - 1);
-        const { data, error } = await base
-          .select(column)
-          .order(column, { ascending: true })
-          .range(from, to);
+        let q = supabase.from("submissions").select(column);
+        if (filter?.city) q = q.eq("city", filter.city);
+        if (filter?.platform) q = q.eq("platform", filter.platform);
+        const { data, error } = await q.order(column, { ascending: true }).range(from, to);
         if (error || !data) return { avg: null, trimmedUsed: true };
         for (const row of data as any[]) {
           const v = row?.[column];
@@ -145,15 +144,14 @@ function VysledekContent() {
     };
 
     const fetchBlock = async (filter?: { city?: string; platform?: string }) => {
-      let base = supabase.from("submissions");
-      if (filter?.city) base = base.eq("city", filter.city);
-      if (filter?.platform) base = base.eq("platform", filter.platform);
-
       // Count first (needed for trimming window)
-      const { count, error: countError } = await base.select("id", {
+      let countQ = supabase.from("submissions").select("id", {
         count: "exact",
         head: true,
       });
+      if (filter?.city) countQ = countQ.eq("city", filter.city);
+      if (filter?.platform) countQ = countQ.eq("platform", filter.platform);
+      const { count, error: countError } = await countQ;
       if (countError || count == null) return { status: "error" } as BenchmarkBlock;
 
       if (count === 0) {
@@ -168,15 +166,20 @@ function VysledekContent() {
       }
 
       // Weekly avg can stay simple
-      const { data: weeklyData, error: weeklyError } = await base.select(
-        "avg_earnings_week_czk:earnings_week_czk.avg()"
-      );
-      const weeklyRow = weeklyData?.[0] as unknown as { avg_earnings_week_czk?: number | null } | undefined;
+      let weeklyQ = supabase
+        .from("submissions")
+        .select("avg_earnings_week_czk:earnings_week_czk.avg()");
+      if (filter?.city) weeklyQ = weeklyQ.eq("city", filter.city);
+      if (filter?.platform) weeklyQ = weeklyQ.eq("platform", filter.platform);
+      const { data: weeklyData, error: weeklyError } = await weeklyQ;
+      const weeklyRow = weeklyData?.[0] as unknown as
+        | { avg_earnings_week_czk?: number | null }
+        | undefined;
       const avgEarningsWeek =
         weeklyError || !weeklyRow ? null : (weeklyRow.avg_earnings_week_czk ?? null);
 
-      const hourly = await fetchTrimmedMean(base, "hourly_rate", count);
-      const epd = await fetchTrimmedMean(base, "earnings_per_delivery", count);
+      const hourly = await fetchTrimmedMean(filter, "hourly_rate", count);
+      const epd = await fetchTrimmedMean(filter, "earnings_per_delivery", count);
 
       return {
         status: "ok",
