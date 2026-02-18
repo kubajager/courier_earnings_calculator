@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
+import { Stickers } from "@/components/Stickers";
 import "./globals.css";
 
 const inter = Inter({
@@ -27,9 +28,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${inter.variable} ${spaceGrotesk.variable} antialiased`}
+        className={`${inter.variable} ${spaceGrotesk.variable} antialiased min-h-screen flex flex-col items-center relative`}
       >
-        {children}
+        <Stickers />
+        <main className="w-full flex-1 flex justify-center items-center p-4 md:p-8 relative z-10">
+          {children}
+        </main>
       </body>
     </html>
   );
