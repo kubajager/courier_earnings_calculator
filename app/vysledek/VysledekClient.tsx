@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import PageShell from "@/components/PageShell";
 import {
@@ -42,6 +41,44 @@ type PlatformRangeRow = {
 const THRESHOLD_PERCENT = 5;
 const SCORE_ABOVE = 60;
 const SCORE_BELOW = 40;
+
+function PlatformLogo({ url, name }: { url: string; name: string }) {
+  const [src, setSrc] = useState(url);
+  const [failed, setFailed] = useState(false);
+  const initial = name.charAt(0);
+  const isClearbit = url.startsWith("https://logo.clearbit.com/");
+  const domain = isClearbit ? url.slice(24) : "";
+  const fallbackUrl = domain
+    ? `https://www.google.com/s2/favicons?domain=${domain}&sz=128`
+    : "";
+
+  const handleError = () => {
+    if (src === url && fallbackUrl) {
+      setSrc(fallbackUrl);
+    } else {
+      setFailed(true);
+    }
+  };
+
+  return (
+    <span className="relative w-8 h-8 shrink-0 rounded overflow-hidden bg-[#2A2F36] flex items-center justify-center">
+      {failed ? (
+        <span className="text-[#8A8F94] text-sm font-medium" aria-hidden>
+          {initial}
+        </span>
+      ) : (
+        <img
+          src={src}
+          alt=""
+          width={32}
+          height={32}
+          className="w-full h-full object-contain"
+          onError={handleError}
+        />
+      )}
+    </span>
+  );
+}
 
 function diffPercent(user: number, benchmark: number): number | null {
   if (!benchmark || !Number.isFinite(benchmark)) return null;
@@ -356,15 +393,7 @@ export function VysledekClient({
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     {logoPath ? (
-                      <span className="relative w-8 h-8 shrink-0 rounded overflow-hidden bg-[#2A2F36]">
-                        <Image
-                          src={logoPath}
-                          alt=""
-                          width={32}
-                          height={32}
-                          className="object-contain"
-                        />
-                      </span>
+                      <PlatformLogo url={logoPath} name={plat} />
                     ) : null}
                     <span className="text-white font-medium">{plat}</span>
                     <span
