@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { useId } from "react";
+import React, { useId } from "react";
 
 function Float({
   children,
@@ -24,8 +24,8 @@ function Float({
   );
 }
 
-function DollarCoin({ size = 88 }: { size?: number }) {
-  const uid = useId().replace(/:/g, "x");
+function DollarCoin({ size = 88, idSuffix }: { size?: number; idSuffix?: string }) {
+  const uid = idSuffix ?? useId().replace(/:/g, "x");
   return (
     <svg width={size} height={Math.round(size * 1.04)} viewBox="0 0 88 92" fill="none">
       <defs>
@@ -78,8 +78,8 @@ function DollarCoin({ size = 88 }: { size?: number }) {
   );
 }
 
-function DeliveryVan({ size = 130 }: { size?: number }) {
-  const uid = useId().replace(/:/g, "x");
+function DeliveryVan({ size = 130, idSuffix }: { size?: number; idSuffix?: string }) {
+  const uid = idSuffix ?? useId().replace(/:/g, "x");
   const h = Math.round(size * 0.73);
   const rWx = 30,
     rWy = 76;
@@ -186,8 +186,8 @@ function DeliveryVan({ size = 130 }: { size?: number }) {
   );
 }
 
-function PackageClosed({ size = 80 }: { size?: number }) {
-  const uid = useId().replace(/:/g, "x");
+function PackageClosed({ size = 80, idSuffix }: { size?: number; idSuffix?: string }) {
+  const uid = idSuffix ?? useId().replace(/:/g, "x");
   return (
     <svg width={size} height={size} viewBox="0 0 84 84" fill="none">
       <defs>
@@ -222,8 +222,8 @@ function PackageClosed({ size = 80 }: { size?: number }) {
   );
 }
 
-function PackageOpen({ size = 88 }: { size?: number }) {
-  const uid = useId().replace(/:/g, "x");
+function PackageOpen({ size = 88, idSuffix }: { size?: number; idSuffix?: string }) {
+  const uid = idSuffix ?? useId().replace(/:/g, "x");
   return (
     <svg width={size} height={size} viewBox="0 0 92 94" fill="none">
       <defs>
@@ -269,8 +269,8 @@ function PackageOpen({ size = 88 }: { size?: number }) {
   );
 }
 
-function PackageTiny({ size = 60 }: { size?: number }) {
-  const uid = useId().replace(/:/g, "x");
+function PackageTiny({ size = 60, idSuffix }: { size?: number; idSuffix?: string }) {
+  const uid = idSuffix ?? useId().replace(/:/g, "x");
   return (
     <svg width={size} height={Math.round(size * 1.08)} viewBox="0 0 60 65" fill="none">
       <defs>
@@ -305,8 +305,8 @@ function PackageTiny({ size = 60 }: { size?: number }) {
   );
 }
 
-function ClockSticker({ size = 82 }: { size?: number }) {
-  const uid = useId().replace(/:/g, "x");
+function ClockSticker({ size = 82, idSuffix }: { size?: number; idSuffix?: string }) {
+  const uid = idSuffix ?? useId().replace(/:/g, "x");
   const cx = 42,
     cy = 42;
   const spokeStyle = { transformBox: "view-box", transformOrigin: "" } as React.CSSProperties;
@@ -382,8 +382,8 @@ function ClockSticker({ size = 82 }: { size?: number }) {
   );
 }
 
-function MapPinSticker({ size = 78 }: { size?: number }) {
-  const uid = useId().replace(/:/g, "x");
+function MapPinSticker({ size = 78, idSuffix }: { size?: number; idSuffix?: string }) {
+  const uid = idSuffix ?? useId().replace(/:/g, "x");
   return (
     <svg width={size} height={size} viewBox="0 0 78 78" fill="none">
       <defs>
@@ -548,7 +548,9 @@ export function Stickers() {
           }}
         >
           <Float amp={s.floatAmp} dur={s.floatDur} delay={s.floatDelay}>
-            {s.el}
+            {React.cloneElement(s.el as React.ReactElement<{ idSuffix?: string }>, {
+              idSuffix: s.id,
+            })}
           </Float>
         </motion.div>
       ))}
