@@ -81,7 +81,7 @@ export default function KalkulackaPage() {
   const [formData, setFormData] = useState<Partial<FormData>>({});
   const [website, setWebsite] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
     if (website.trim()) return;
@@ -114,40 +114,45 @@ export default function KalkulackaPage() {
         earningsPerWeek: validated.earningsPerWeek,
       });
 
-      void supabase
-        .from("leads")
-        .upsert(
-          { email: validated.email.trim().toLowerCase(), updated_at: new Date().toISOString() },
-          { onConflict: "email" }
-        )
-        .then(() => {}, () => {});
+      const fallbackParams = new URLSearchParams();
+      fallbackParams.set("h", validated.hoursPerWeek.toString());
+      fallbackParams.set("d", validated.deliveriesPerWeek.toString());
+      fallbackParams.set("e", validated.earningsPerWeek.toString());
+      if (cityValue) fallbackParams.set("c", cityValue);
+      if (platformValue) fallbackParams.set("p", platformValue);
 
-      void supabase
+      let profileId: string | null = null;
+      const { data: profileData } = await supabase.rpc("upsert_profile", {
+        p_email: validated.email.trim().toLowerCase(),
+        p_consent_at: new Date().toISOString(),
+        p_city: cityValue || null,
+        p_platform: platformValue || null,
+      });
+      const rawId = Array.isArray(profileData) ? profileData[0] : profileData;
+      if (rawId != null) profileId = String(rawId);
+
+      const insertPayload = {
+        profile_id: profileId || undefined,
+        city: cityValue,
+        platform: platformValue,
+        hours_week: validated.hoursPerWeek,
+        deliveries_week: validated.deliveriesPerWeek,
+        earnings_week_czk: validated.earningsPerWeek,
+        hourly_rate: metrics.hourlyRate,
+        earnings_per_delivery: metrics.earningsPerDelivery,
+      };
+      const { data: subData } = await supabase
         .from("submissions")
-        .insert({
-          city: cityValue,
-          platform: platformValue,
-          hours_week: validated.hoursPerWeek,
-          deliveries_week: validated.deliveriesPerWeek,
-          earnings_week_czk: validated.earningsPerWeek,
-          hourly_rate: metrics.hourlyRate,
-          earnings_per_delivery: metrics.earningsPerDelivery,
-        })
-        .then(
-          () => {},
-          () => {}
-        );
+        .insert(insertPayload)
+        .select("share_id")
+        .single();
 
-      // Build query params (compact, only essential fields)
-      const params = new URLSearchParams();
-      params.set("h", validated.hoursPerWeek.toString());
-      params.set("d", validated.deliveriesPerWeek.toString());
-      params.set("e", validated.earningsPerWeek.toString());
-      if (cityValue) params.set("c", cityValue);
-      if (platformValue) params.set("p", platformValue);
-      params.set("b", "1");
-
-      router.push(`/vysledek?${params.toString()}`);
+      const sid = subData?.share_id != null ? String(subData.share_id) : null;
+      if (sid) {
+        router.push(`/vysledek?sid=${encodeURIComponent(sid)}`);
+      } else {
+        router.push(`/vysledek?${fallbackParams.toString()}`);
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         const fieldErrors: Record<string, string> = {};
@@ -159,13 +164,15 @@ export default function KalkulackaPage() {
             ? maybeErrors
             : [];
 
-        issues.forEach((err: any) => {
+        issues.forEach((err: { path?: string[]; message?: string }) => {
           const path =
             Array.isArray(err?.path) && err.path.length > 0 ? err.path.join(".") : "_form";
           const message = typeof err?.message === "string" ? err.message : "Neplatné hodnoty";
           fieldErrors[path] = message;
         });
         setErrors(fieldErrors);
+      } else {
+        setErrors({ _form: "Nepodařilo se odeslat. Zkuste to znovu." });
       }
     }
   };
@@ -438,6 +445,9 @@ export default function KalkulackaPage() {
               .
             </label>
           </div>
+          <p className="text-[12px] text-[#8A8F94] mt-1">
+            Účel: zobrazení výsledků, uložení historie a tvorba anonymních tržních průměrů.
+          </p>
           {errors.consentToPrivacy && (
             <p className="mt-1 text-sm text-[#F87171]">{errors.consentToPrivacy}</p>
           )}
