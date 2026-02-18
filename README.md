@@ -20,6 +20,50 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Supabase (anonymní benchmark)
+
+### 1) Env proměnné
+
+Vytvořte `.env.local`:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+```
+
+### 2) SQL pro tabulku `submissions`
+
+Spusťte v Supabase SQL editoru:
+
+```sql
+create table if not exists public.submissions (
+  id bigserial primary key,
+  created_at timestamptz not null default now(),
+  city text not null,
+  platform text not null,
+  hours_week double precision not null check (hours_week > 0),
+  deliveries_week integer not null check (deliveries_week > 0),
+  earnings_week_czk double precision not null check (earnings_week_czk > 0),
+  hourly_rate double precision not null check (hourly_rate > 0),
+  earnings_per_delivery double precision not null check (earnings_per_delivery > 0)
+);
+
+alter table public.submissions enable row level security;
+
+-- Anonymní vkládání a čtení agregací (bez auth)
+create policy "anon_insert_submissions"
+on public.submissions
+for insert
+to anon
+with check (true);
+
+create policy "anon_select_submissions"
+on public.submissions
+for select
+to anon
+using (true);
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

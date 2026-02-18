@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import PageShell from "@/components/PageShell";
+import { calculateAll } from "@/lib/calc";
+import { supabase } from "@/lib/supabaseClient";
 
 const formSchema = z
   .object({
@@ -13,13 +15,17 @@ const formSchema = z
     platformOther: z.string().optional(),
     hoursPerWeek: z
       .number({ message: "Hodiny musí být číslo" })
-      .positive("Hodiny musí být větší než 0"),
+      .min(1, "Odpracované hodiny musí být alespoň 1")
+      .max(100, "Odpracované hodiny mohou být max. 100"),
     deliveriesPerWeek: z
       .number({ message: "Počet doručení musí být číslo" })
-      .positive("Počet doručení musí být větší než 0"),
+      .int("Počet doručení musí být celé číslo")
+      .min(1, "Počet doručení musí být alespoň 1")
+      .max(2000, "Počet doručení může být max. 2000"),
     earningsPerWeek: z
       .number({ message: "Výdělek musí být číslo" })
-      .positive("Výdělek musí být větší než 0"),
+      .min(1, "Výdělek musí být alespoň 1 Kč")
+      .max(200000, "Výdělek může být max. 200 000 Kč"),
     contributeToBenchmark: z.boolean(),
   })
   .refine(
@@ -85,21 +91,46 @@ export default function KalkulackaPage() {
           formData.earningsPerWeek === undefined ? undefined : Number(formData.earningsPerWeek),
       });
 
+      const cityValue =
+        validated.city === "Jiné" ? validated.cityOther?.trim() || "" : validated.city;
+      const platformValue =
+        validated.platform === "Jiné"
+          ? validated.platformOther?.trim() || ""
+          : validated.platform;
+
+      const metrics = calculateAll({
+        hoursPerWeek: validated.hoursPerWeek,
+        deliveriesPerWeek: validated.deliveriesPerWeek,
+        earningsPerWeek: validated.earningsPerWeek,
+      });
+
+      if (validated.contributeToBenchmark) {
+        void supabase
+          .from("submissions")
+          .insert({
+            city: cityValue,
+            platform: platformValue,
+            hours_week: validated.hoursPerWeek,
+            deliveries_week: validated.deliveriesPerWeek,
+            earnings_week_czk: validated.earningsPerWeek,
+            hourly_rate: metrics.hourlyRate,
+            earnings_per_delivery: metrics.earningsPerDelivery,
+          })
+          .then(
+            () => {},
+            () => {
+              // Do not block redirect on failure
+            }
+          );
+      }
+
       // Build query params (compact, only essential fields)
       const params = new URLSearchParams();
       params.set("h", validated.hoursPerWeek.toString());
       params.set("d", validated.deliveriesPerWeek.toString());
       params.set("e", validated.earningsPerWeek.toString());
-      if (validated.city !== "Jiné") {
-        params.set("c", validated.city);
-      } else if (validated.cityOther) {
-        params.set("c", validated.cityOther);
-      }
-      if (validated.platform !== "Jiné") {
-        params.set("p", validated.platform);
-      } else if (validated.platformOther) {
-        params.set("p", validated.platformOther);
-      }
+      if (cityValue) params.set("c", cityValue);
+      if (platformValue) params.set("p", platformValue);
       if (validated.contributeToBenchmark) {
         params.set("b", "1");
       }
